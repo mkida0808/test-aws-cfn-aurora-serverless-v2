@@ -18,11 +18,11 @@ Parameters:
   MasterUsername:
     Description: MasterUsername
     Type: String
-    Default: admin
+    Default: fcsadmin
   MasterUserPassword:
     Description: MasterUserPassword
     Type: String
-    Default: password
+    Default: fcspassword
     NoEcho: true
   DatabaseName:
     Description: DatabaseName
@@ -40,7 +40,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       VpcId: !Ref 'VpcId'
-      GroupDescription: !Sub '${AWS::StackName}-Allow MySQL-(tcp3306)'
+      GroupDescription: !Sub '${AWS::StackName}-Allow PostgreSQL-(tcp5432)'
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 5432
@@ -51,15 +51,11 @@ Resources:
     Type: AWS::RDS::DBClusterParameterGroup
     Properties:
       Description: !Sub '${AWS::StackName}-DBClusterParameterGroup'
-      # Family: aurora-mysql8.0
       Family: aurora-postgresql13
       Parameters:
-        character_set_server: utf8
-        character_set_client: utf8
-        character_set_connection: utf8
-        character_set_results: utf8
-        character_set_database: utf8
-        performance_schema: 1
+      # DBクラスターパラメータはこちらのサイトを参考（https://aws.amazon.com/jp/blogs/news/deploy-an-amazon-aurora-postgresql-db-cluster-with-recommended-best-practices-using-aws-cloudformation/）
+        timezone: Asia/Tokyo
+        rds.force_ssl: 1
 
   DBParameterGroup:
     Type: AWS::RDS::DBParameterGroup
@@ -68,18 +64,16 @@ Resources:
       # Family: aurora-mysql8.0
       Family: aurora-postgresql13
       Parameters:
-        general_log: 0
-        slow_query_log: 1
-        long_query_time: 5000
-        log_output: FILE
+      # DBクラスターパラメータはこちらのサイトを参考（https://aws.amazon.com/jp/blogs/news/deploy-an-amazon-aurora-postgresql-db-cluster-with-recommended-best-practices-using-aws-cloudformation/）
+        log_connections: 1
 
   DBCluster:
     Type: AWS::RDS::DBCluster
     DeletionPolicy: Snapshot
     Properties:
       DBSubnetGroupName: !Ref 'DBSubnetGroup'
-      Engine: aurora-mysql
-      EngineVersion: 8.0.mysql_aurora.3.02.0
+      Engine: aurora-postgresql
+      EngineVersion: 13.7
       VpcSecurityGroupIds:
         - !Ref 'SecurityGroup'
       DBClusterParameterGroupName: !Ref 'DBClusterParameterGroup'
@@ -91,7 +85,7 @@ Resources:
       MasterUserPassword: !Ref 'MasterUserPassword'
       ServerlessV2ScalingConfiguration:
         MaxCapacity: 16
-        MinCapacity: 0.5
+        MinCapacity: 2
 
   DBInstance1:
     Type: AWS::RDS::DBInstance
@@ -99,7 +93,7 @@ Resources:
       DBClusterIdentifier: !Ref 'DBCluster'
       DBInstanceClass: db.serverless
       DBParameterGroupName: !Ref 'DBParameterGroup'
-      Engine: aurora-mysql
+      Engine: aurora-postgresql
       EnablePerformanceInsights: true
       PreferredMaintenanceWindow: Thu:19:05-Thu:19:35
       PromotionTier: 0
@@ -108,17 +102,18 @@ Resources:
         - !GetAZs
           Ref: AWS::Region
 
-  DBInstance2:
-    Type: AWS::RDS::DBInstance
-    Properties:
-      DBClusterIdentifier: !Ref 'DBCluster'
-      DBInstanceClass: db.serverless
-      DBParameterGroupName: !Ref 'DBParameterGroup'
-      Engine: aurora-mysql
-      EnablePerformanceInsights: true
-      PreferredMaintenanceWindow: Thu:19:05-Thu:19:35
-      PromotionTier: 1
-      AvailabilityZone: !Select
-        - 1
-        - !GetAZs
-          Ref: AWS::Region
+  # DBInstance2:
+  #   Type: AWS::RDS::DBInstance
+  #   Properties:
+  #     DBClusterIdentifier: !Ref 'DBCluster'
+  #     DBInstanceClass: db.serverless
+  #     DBParameterGroupName: !Ref 'DBParameterGroup'
+  #     # Engine: aurora-mysql
+  #     Engine: aurora-postgresql
+  #     EnablePerformanceInsights: true
+  #     PreferredMaintenanceWindow: Thu:19:05-Thu:19:35
+  #     PromotionTier: 1
+  #     AvailabilityZone: !Select
+  #       - 1
+  #       - !GetAZs
+  #         Ref: AWS::Region
