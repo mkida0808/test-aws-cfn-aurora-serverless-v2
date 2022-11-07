@@ -61,7 +61,6 @@ Resources:
     Type: AWS::RDS::DBParameterGroup
     Properties:
       Description: !Sub '${AWS::StackName}-DBParameterGroup'
-      # Family: aurora-mysql8.0
       Family: aurora-postgresql13
       Parameters:
       # DBクラスターパラメータはこちらのサイトを参考（https://aws.amazon.com/jp/blogs/news/deploy-an-amazon-aurora-postgresql-db-cluster-with-recommended-best-practices-using-aws-cloudformation/）
